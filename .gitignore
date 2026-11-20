@@ -4,3 +4,7 @@ __pycache__/
 runner.lock
 
 runner.wake
+
+# .NET build output
+[Bb]in/
+[Oo]bj/
