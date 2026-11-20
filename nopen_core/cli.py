@@ -1,4 +1,4 @@
-"""Turkish command-line interface for Nopen Studio Core W001."""
+"""Turkish command-line interface for Nopen Buddy."""
 
 import argparse
 import datetime
@@ -12,14 +12,15 @@ import sqlite3
 import sys
 import time
 
-from . import core
+from . import core, modes
 from .store import CoreError, STATES, connect
 
 WARNING = """========================================================================
-NOPEN STUDIO CORE | İLK KURULUM VE İZİN BİLDİRİMİ
+NOPEN BUDDY | İLK KURULUM VE İZİN BİLDİRİMİ
 
 Bu sürüm görev hafızasını bu bilgisayarda saklar ve ağ bağlantısı kurmaz.
-Ekran izleme ve ekran kontrolü KAPALI — NOT IMPLEMENTED.
+Operator Buddy konsol modu kullanılabilir. Companion Buddy — NOT IMPLEMENTED.
+Ekran izleme, fare/klavye erişimi, mikrofon, ses ve ağ KAPALI.
 Onayınız yalnız bu bildirimi okuduğunuzu kaydeder. İşletim sistemi
 izni vermez. Reddetseniz de konsol ve görev hafızası çalışır.
 
@@ -55,7 +56,9 @@ def deadline(value):
 
 
 def parser():
-    root = argparse.ArgumentParser(prog="nopen", description="Nopen Studio Core yerel görev hafızası.")
+    root = argparse.ArgumentParser(prog="nopen", description="Nopen Buddy yerel görev hafızası.")
+    root.add_argument("--mode", dest="buddy_mode", choices=modes.MODE_NAMES, default=modes.OPERATOR,
+                      help="Ürün modu. Varsayılan operator. companion: NOT IMPLEMENTED.")
     commands = root.add_subparsers(dest="command", required=True)
 
     init = commands.add_parser("init", help="İlk kurulum bildirimini ve izin durumunu göster.")
@@ -63,7 +66,8 @@ def parser():
     decision.add_argument("--accept", action="store_true", help="Bildirimi okuduğunuzu açıkça kaydet.")
     decision.add_argument("--decline", action="store_true", help="Bildirimi reddet ve konsol modunu kullan.")
 
-    commands.add_parser("status", help="Hafıza, kuyruk ve izin durumunu göster.")
+    commands.add_parser("status", help="Etkin ürün modunu, hafızayı, kuyruğu ve izin durumunu göster.")
+    commands.add_parser("modes", help="Ürün modlarını ve yetenek durumlarını salt okunur listele.")
     run = commands.add_parser("run", help="Yerel işlem kuyruğunu terminalde çalıştır.")
     run.add_argument("--once", action="store_true", help="En fazla bir kontrol noktası işle ve çık.")
     commands.add_parser("pause", help="Yeni işlem başlamasını duraklat.")
@@ -213,6 +217,7 @@ def dispatch(db, args):
         result = core.handoff(db, args.id)
     elif command == "status":
         result = core.status(db)
+        result["active_mode"] = args.buddy_mode
     elif command == "export":
         result = core.export_memory(db)
     elif command == "revoke":
@@ -227,7 +232,11 @@ def main(argv=None):
     args = parser().parse_args(argv)
     os.umask(0o077)
     try:
-        if args.command == "doctor":
+        if args.buddy_mode == modes.COMPANION:
+            raise CoreError("Companion Buddy — NOT IMPLEMENTED.")
+        if args.command == "modes":
+            print_json(modes.describe())
+        elif args.command == "doctor":
             print_json(doctor())
         elif args.command == "init":
             print(WARNING, file=sys.stderr, flush=True)
