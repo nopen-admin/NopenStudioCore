@@ -1,0 +1,9 @@
+[Unit]
+Description=Nopen Studio Core local checkpoint runner
+
+[Service]
+Type=exec
+ExecStart=%h/.local/bin/nopen run
+Restart=no
+NoNewPrivileges=yes
+UMask=0077
