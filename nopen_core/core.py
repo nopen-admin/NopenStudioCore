@@ -57,6 +57,8 @@ def revoke(db, capability):
             )
             if change.rowcount:
                 event(db, "permission", "human", {"capability": target, "decision": "REVOKED"})
+        if "screen-read" in targets:
+            event(db, "observe-stop", "human", {"status": "STOPPED"})
         return permissions(db)
 
 

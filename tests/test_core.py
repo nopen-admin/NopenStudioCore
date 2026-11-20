@@ -18,8 +18,8 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 CLI = ROOT / "nopen"
 PROBED_COMMANDS = (
-    ("modes",), ("doctor",), ("init", "--accept"), ("modes",), ("revoke", "all"),
-    ("--mode", "operator", "status"),
+    ("observe", "status"), ("modes",), ("doctor",), ("init", "--accept"), ("modes",), ("revoke", "all"),
+    ("--mode", "operator", "status"), ("observe", "stop"),
     ("task", "add", "demo", "Kurgu görev"), ("pause",), ("status",),
     ("task", "evidence", "demo", "fixture:42", "Kurgu kanıt"),
     ("task", "decision", "demo", "approve", "Kurgu onay"),
@@ -33,6 +33,7 @@ PROBE_CASES = [
 ] + [
     (("--mode", "companion", "init", "--accept"), 1),
     (("--mode", "companion", "run", "--once"), 1),
+    (("observe", "start"), 1), (("observe", "start", "--consent"), 1),
 ]
 sys.path.insert(0, str(ROOT))
 from nopen_core.store import APPLICATION_ID, MIGRATIONS, SCHEMA_VERSION
@@ -280,8 +281,8 @@ with connect() as db, core.runner_lock():
                     db.execute(statement)
 
     def test_production_imports_exclude_network_desktop_and_process_modules(self):
-        allowed = {"argparse", "contextlib", "datetime", "fcntl", "json", "os", "pathlib",
-                   "platform", "re", "signal", "sqlite3", "stat", "sys", "time", "nopen_core"}
+        allowed = {"abc", "argparse", "contextlib", "datetime", "fcntl", "json", "os", "pathlib",
+                   "platform", "re", "select", "signal", "sqlite3", "stat", "sys", "time", "nopen_core"}
         for path in [CLI, *(ROOT / "nopen_core").glob("*.py")]:
             for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
                 if isinstance(node, ast.Import):
