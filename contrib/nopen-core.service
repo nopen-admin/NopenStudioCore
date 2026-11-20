@@ -1,5 +1,5 @@
 [Unit]
-Description=Nopen Studio Core local checkpoint runner
+Description=Nopen Buddy local checkpoint runner
 
 [Service]
 Type=exec

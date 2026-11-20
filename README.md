@@ -1,6 +1,6 @@
-# Nopen Studio Core
+# Nopen Buddy
 
-W001, Fedora için terminalden yönetilen yerel görev hafızası prototipidir. Görev amacı, kanıt kaynağı, insan kararı ve kontrol noktası süreçler arasında korunur. Çalıştırıcı yalnız SQLite kontrol noktalarını işler. Ekran izleme, fare/klavye denetimi, pano, ses, model ve tarayıcı entegrasyonları P1’de kapalıdır.
+Operator Buddy, Fedora için terminalden yönetilen yerel görev hafızası prototipidir. Görev amacı, kanıt kaynağı, insan kararı ve kontrol noktası süreçler arasında korunur. Çalıştırıcı yalnız SQLite kontrol noktalarını işler. Companion Buddy planlanan robot ve ses arayüzüdür. Bu teslimde Companion Buddy, ekran, fare/klavye denetimi, pano, mikrofon, ses ve ağ erişimi kapalıdır.
 
 - [Ürün sözleşmesi ve güvenlik sınırları (#1)](https://github.com/nopen-admin/NopenStudioCore/issues/1)
 - [W001 görev ve kabul ölçütleri (#2)](https://github.com/nopen-admin/NopenStudioCore/issues/2)
@@ -13,11 +13,12 @@ Kaynağın doğrulanmış bir kopyasında, root kullanmadan aşağıdaki komutla
 python3 --version
 python3 -c 'import sqlite3; print(sqlite3.sqlite_version)'
 ./nopen --help
+./nopen modes
 ./nopen init
 ./nopen doctor
 ```
 
-İlk kurulum ekranı Türkçedir. `EVET` bildirimi okuduğunuzu kaydeder. Reddetmek için Enter’a basın veya `--decline` kullanın. Terminal dışı çağrıda tercih belirtilmezse kayıt reddedilmiş sayılır. Her iki tercihte de ekran yetkileri **NOT IMPLEMENTED** olarak gösterilir ve konsol kullanılabilir.
+İlk kurulum ekranı Türkçedir. `EVET` bildirimi okuduğunuzu kaydeder. Reddetmek için Enter’a basın veya `--decline` kullanın. Terminal dışı çağrıda tercih belirtilmezse kayıt reddedilmiş sayılır. Her iki tercihte de Operator Buddy kullanılabilir. `nopen modes` kurulum öncesinde de çalışır. `nopen --mode companion status` açıkça **NOT IMPLEMENTED** hatasıyla çıkar.
 
 ```bash
 ./nopen task add demo "Kurgu teslimi incele" --priority 2 --deadline 2030-01-10
@@ -33,7 +34,8 @@ python3 -c 'import sqlite3; print(sqlite3.sqlite_version)'
 
 | Komut | Davranış |
 | --- | --- |
-| `status` | Kuyruk kipini, sıradaki işlem sayısını, görev durumlarını ve izin kayıtlarını gösterir. |
+| `modes` | Ürün modlarını ve kapalı erişimleri salt okunur listeler. |
+| `status` | Etkin ürün modunu, kuyruk kipini, sıradaki işlem sayısını, görev durumlarını ve izin kayıtlarını gösterir. |
 | `run` | Terminalde çalışır ve kuyruğu işler. `--once` en fazla bir işlemden sonra çıkar. |
 | `pause` / `resume` | Yeni işlem kabulünü kapatır / açar. Açık çalıştırıcı bekler. |
 | `stop` | Yeni işlem kabulünü kapatır. Açık çalıştırıcı çıkar. `Ctrl+C` de durdurur. |
@@ -64,9 +66,9 @@ Birimi kullanıcı oturumunda manuel olarak başlatın. Bilgisayar kapalı veya 
 
 Kullanıcının CLI’ye verdiği görev, karar, kaynak referansı, bağlam ve komut durumu yerel SQLite dosyasına gider. `handoff` ve `export` sonucu terminale çıkar. Kaynak referansları metin olarak saklanır. Uygulama bağlantıları açmaz, telemetri göndermez ve terminal geçmişini okumaz. GitHub’dan ilk kaynak edinimi ayrıca ağ bağlantısı gerektirebilir.
 
-Resmî kaynak [Nopen Studio Core](https://github.com/nopen-admin/NopenStudioCore). Kaynağı çalıştırmadan önce `git rev-parse HEAD` çıktısını proje sahibinin paylaştığı tam commit kimliğiyle karşılaştırın. W001 imzasız kaynak prototipidir. İmzalı dağıtım veya yayın paketi bulunmuyor.
+Resmî kaynak [Nopen Buddy](https://github.com/nopen-admin/NopenStudioCore). Kaynağı çalıştırmadan önce `git rev-parse HEAD` çıktısını proje sahibinin paylaştığı tam commit kimliğiyle karşılaştırın. W001 imzasız kaynak prototipidir. İmzalı dağıtım veya yayın paketi bulunmuyor.
 
-[Lisans](LICENSE) · [Güvenlik](SECURITY.md) · [Gizlilik](PRIVACY.md) · [Mimari](docs/ARCHITECTURE.md) · [Tehdit modeli](docs/THREAT_MODEL.md) · [Kararlar](docs/DECISIONS.md) · [Test](TESTING.md)
+[Lisans](LICENSE) · [Güvenlik](SECURITY.md) · [Gizlilik](PRIVACY.md) · [Mimari](docs/ARCHITECTURE.md) · [Tehdit modeli](docs/THREAT_MODEL.md) · [Kararlar](docs/DECISIONS.md) · [Test](TESTING.md) · [Modlar](docs/MODES.md) · [Marka geçişi](docs/BRAND_MIGRATION.md) · [Companion yol haritası](docs/COMPANION_ROADMAP.md)
 
 ## Geliştirme
 

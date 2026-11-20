@@ -18,7 +18,8 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 CLI = ROOT / "nopen"
 PROBED_COMMANDS = (
-    ("doctor",), ("init", "--accept"), ("revoke", "all"),
+    ("modes",), ("doctor",), ("init", "--accept"), ("modes",), ("revoke", "all"),
+    ("--mode", "operator", "status"),
     ("task", "add", "demo", "Kurgu görev"), ("pause",), ("status",),
     ("task", "evidence", "demo", "fixture:42", "Kurgu kanıt"),
     ("task", "decision", "demo", "approve", "Kurgu onay"),
@@ -27,6 +28,12 @@ PROBED_COMMANDS = (
     ("task", "checkpoint", "demo", "a1"), ("resume",), ("run", "--once"),
     ("handoff", "demo"), ("export",), ("simulate-intervention",), ("stop",),
 )
+PROBE_CASES = [
+    (args, 0) for args in PROBED_COMMANDS
+] + [
+    (("--mode", "companion", "init", "--accept"), 1),
+    (("--mode", "companion", "run", "--once"), 1),
+]
 sys.path.insert(0, str(ROOT))
 from nopen_core.store import APPLICATION_ID, MIGRATIONS, SCHEMA_VERSION
 
@@ -340,10 +347,10 @@ runpy.run_path(sys.argv[0], run_name="__main__")
             self.skipTest("Ortam seccomp filtresi yüklemeye izin vermiyor")
         self.assertEqual(probe.returncode, 0, probe.stderr)
         self.assertEqual(guarded("--test-filter").returncode, -signal.SIGSYS)
-        for args in PROBED_COMMANDS:
+        for args, code in PROBE_CASES:
             with self.subTest(command=args):
                 outcome = guarded(*args)
-                self.assertEqual(outcome.returncode, 0, outcome.stderr)
+                self.assertEqual(outcome.returncode, code, outcome.stderr)
 
     @unittest.skipUnless(shutil.which("strace"), "strace gerekli")
     def test_no_network_or_desktop_device_syscalls(self):
@@ -351,14 +358,14 @@ runpy.run_path(sys.argv[0], run_name="__main__")
         if probe.returncode:
             self.skipTest("Bu ortam ptrace kullanımına izin vermiyor")
         trace = self.path / "syscalls"
-        for args in PROBED_COMMANDS:
+        for args, code in PROBE_CASES:
             with self.subTest(command=args):
                 result = subprocess.run(
                     ["strace", "-f", "-qq", "-o", str(trace), "-e", "trace=%network,%file,ioctl",
                      "-e", "signal=none", str(CLI), *args],
                     env=self.env, cwd=ROOT, capture_output=True, text=True, timeout=15,
                 )
-                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.returncode, code, result.stderr)
                 calls = trace.read_text()
                 self.assertNotRegex(calls, r"\b(?:socket|connect|sendto|sendmsg|recvmsg|socketpair)\(")
                 self.assertNotRegex(calls, r'"(?:/dev/(?:input|uinput|snd|video|dri)|/tmp/\.X11-unix)')
