@@ -76,3 +76,7 @@ Resmî kaynak [Nopen Buddy](https://github.com/nopen-admin/NopenStudioCore). Kay
 ## Geliştirme
 
 Değişiklikler ayrı bir geliştirme dalından `main` hedefli taslak PR ile değerlendirilir. Depoya kişisel veri, ekran görüntüsü, parola, API anahtarı veya özel konuşma içeriği eklemeyin. Kabul iddialarını çalıştırılan testlerle sınırlayın.
+
+## C# motor prototipi
+
+NB-W004A, Python referansının yanında ayrı bir .NET 10 konsol motoru sunar. İlk beceri açık onayla kurgu kontrol noktası üretir. Başlatma ve komutlar için [motor mimarisi](docs/ENGINE_ARCHITECTURE.md), veri uyumu için [Python’dan C#’a geçiş](docs/PYTHON_TO_CSHARP_MIGRATION.md).
