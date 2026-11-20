@@ -10,9 +10,9 @@ import re
 import signal
 import sqlite3
 import sys
-import time
 
-from . import core, modes
+from . import core, live, modes
+from .observer import FedoraWaylandObserver, observe_status
 from .store import CoreError, STATES, connect
 
 WARNING = """========================================================================
@@ -55,6 +55,16 @@ def deadline(value):
         raise argparse.ArgumentTypeError("Tarih YYYY-MM-DD biçiminde olmalı.") from None
 
 
+def check_interval(value):
+    try:
+        seconds = float(value)
+    except ValueError:
+        seconds = 0
+    if not 1 <= seconds <= 3600:
+        raise argparse.ArgumentTypeError("Kontrol aralığı 1–3600 saniye olmalıdır.")
+    return seconds
+
+
 def parser():
     root = argparse.ArgumentParser(prog="nopen", description="Nopen Buddy yerel görev hafızası.")
     root.add_argument("--mode", dest="buddy_mode", choices=modes.MODE_NAMES, default=modes.OPERATOR,
@@ -70,6 +80,15 @@ def parser():
     commands.add_parser("modes", help="Ürün modlarını ve yetenek durumlarını salt okunur listele.")
     run = commands.add_parser("run", help="Yerel işlem kuyruğunu terminalde çalıştır.")
     run.add_argument("--once", action="store_true", help="En fazla bir kontrol noktası işle ve çık.")
+    run.add_argument("--check-interval", type=check_interval, default=live.DEFAULT_CHECK_INTERVAL,
+                     help="Bildirim kaçırılırsa kuyruğu yeniden kontrol etme aralığı, saniye.")
+    observe = commands.add_parser("observe", help="Ekran algısının durumunu göster veya durdur.")
+    observation = observe.add_subparsers(dest="observe_command", required=True)
+    observation.add_parser("status", help="Ekran algısının kullanılabilirliğini göster.")
+    observation.add_parser("stop", help="Gözlem oturumunu kapat.")
+    observe_start = observation.add_parser("start", help="Gözlem kullanılabilirliğini denetle.")
+    observe_start.add_argument("--consent", action="store_true",
+                               help="Yerel başlatma isteğini onayla. Portal onayı ayrıdır.")
     commands.add_parser("pause", help="Yeni işlem başlamasını duraklat.")
     commands.add_parser("resume", help="Duraklatılan kuyruğu yeniden etkinleştir.")
     commands.add_parser("stop", help="Kuyruğu kapat ve açık çalıştırıcıdan çık.")
@@ -153,28 +172,33 @@ def print_json(value):
     print(json.dumps(value, ensure_ascii=True, indent=2), flush=True)
 
 
-def run(db, once):
+def run(db, once, interval):
     terminating = False
+    wake = None
 
     def request_stop(_signum, _frame):
         nonlocal terminating
         terminating = True
+        if wake is not None:
+            live.poke(wake)
 
     with core.runner_lock():
         previous_handler = signal.signal(signal.SIGTERM, request_stop)
         try:
-            core.change_mode(db, "run")
-            while not terminating:
-                mode, action = core.step(db)
-                if once:
-                    print_json({"mode": mode, "processed": action})
-                    return
-                if mode == "STOPPED":
-                    return
-                if action is not None:
-                    print_json({"processed": action})
-                else:
-                    time.sleep(0.25)
+            if once:
+                core.change_mode(db, "run")
+                mode, action = core.step(db) if not terminating else (core.mode(db), None)
+                print_json({"mode": mode, "processed": action})
+                return
+            with live.wake_channel() as fd:
+                wake = fd
+                try:
+                    core.change_mode(db, "run")
+                    live.run_loop(db, fd, interval, lambda: terminating,
+                                  lambda action: print_json({"processed": action}),
+                                  FedoraWaylandObserver())
+                finally:
+                    wake = None
         except KeyboardInterrupt:
             terminating = True
             raise
@@ -209,10 +233,11 @@ def task_command(db, args):
 def dispatch(db, args):
     command = args.command
     if command == "run":
-        run(db, args.once)
+        run(db, args.once, args.check_interval)
         return
     if command == "task":
         result = task_command(db, args)
+        live.notify()
     elif command == "handoff":
         result = core.handoff(db, args.id)
     elif command == "status":
@@ -222,9 +247,15 @@ def dispatch(db, args):
         result = core.export_memory(db)
     elif command == "revoke":
         result = core.revoke(db, args.capability)
+        live.notify()
+    elif command == "observe":
+        live.observation_stopped(db)
+        live.notify()
+        result = {"status": "STOPPED", "active": False}
     else:
         operation = "human-intervention" if command == "simulate-intervention" else command
         result = {"mode": core.change_mode(db, operation)}
+        live.notify()
     print_json(result)
 
 
@@ -236,6 +267,12 @@ def main(argv=None):
             raise CoreError("Companion Buddy — NOT IMPLEMENTED.")
         if args.command == "modes":
             print_json(modes.describe())
+        elif args.command == "observe" and args.observe_command == "status":
+            print_json(observe_status())
+        elif args.command == "observe" and args.observe_command == "start":
+            status = FedoraWaylandObserver().start(consent=args.consent)
+            print_json({**observe_status(), "status": status})
+            return 1
         elif args.command == "doctor":
             print_json(doctor())
         elif args.command == "init":

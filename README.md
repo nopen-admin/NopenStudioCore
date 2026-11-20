@@ -43,7 +43,10 @@ python3 -c 'import sqlite3; print(sqlite3.sqlite_version)'
 | `handoff ID` | Güncel görev bağlamını ve en son kaydedilen kontrol noktasını gösterir. |
 | `export` | Görev hafızasının JSON anlık görüntüsünü standart çıktıya yazar. |
 | `revoke screen-read`, `revoke screen-control`, `revoke all` | Yerel karar kaydını iptal eder. |
+| `observe status` / `observe stop` | Gözlem durumunu okur / yerel durdurma olayı kaydeder. Gerçek yakalama kullanılabilirliği `UNAVAILABLE`. |
 | `doctor` | Dağıtım, Wayland/X11, portal manifesti, PipeWire soket yolu ve libei dosyası göstergelerini okur. |
+
+Çalıştırıcı yerel kuyruk bildirimlerini bekler. Bildirim kaçırılırsa zamanlı denetim SQLite durumunu okur. [Olay döngüsü ve Fedora planı](docs/SCREENCAST.md).
 
 Bir terminalde `./nopen run` çalışırken başka bir terminalden `pause`, `resume` ve `stop` kullanılabilir. `READY`, kuyruğun işlem almaya açık olduğunu gösterir. Bir PID veya canlılık göstergesi değildir. Bekleyen işlem sırası FIFO’dur. Öncelik ve son tarih devir bilgisi olarak tutulur. `doctor` yerel dosya ve ortam işaretleriyle sınırlıdır. Portal yetkisinin, hizmet sağlığının veya gerçek ekran erişiminin doğrulaması değildir.
 
